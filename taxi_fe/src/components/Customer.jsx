@@ -9,6 +9,7 @@ function Customer(props) {
   let [dropOffAddress, setDropOffAddress] = useState("Triangulo Las Animas, Puebla, Mexico");
   let [msg, setMsg] = useState("");
   let [msg1, setMsg1] = useState("");
+  let [bookingId, setBookingId] = useState("");
 
   useEffect(() => {
     let channel = socket.channel("customer:" + props.username, {token: "123"});
@@ -24,9 +25,36 @@ function Customer(props) {
     fetch(`http://localhost:4000/api/bookings`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({pickup_address: pickupAddress, dropoff_address: dropOffAddress, username: props.username})
-    }).then(resp => resp.json()).then(dataFromPOST => setMsg(dataFromPOST.msg));
+      body: JSON.stringify({
+        pickup_address: pickupAddress,
+        dropoff_address: dropOffAddress,
+        username: props.username
+      })
+    })
+    .then(resp => resp.json())
+    .then(dataFromPOST => {
+      setMsg(dataFromPOST.msg);
+      setBookingId(dataFromPOST.booking_id);
+    });
   };
+
+  
+
+  let cancel = () => {
+    fetch(`http://localhost:4000/api/bookings/${bookingId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: "cancel",
+        username: props.username
+      })
+    }).then(resp => resp.json())
+      .then(data => {
+        setMsg(data.msg);
+        setBookingId("");
+      });
+  };
+
 
   return (
     <div style={{textAlign: "center", borderStyle: "solid"}}>
@@ -41,6 +69,13 @@ function Customer(props) {
             onChange={ev => setDropOffAddress(ev.target.value)}
             value={dropOffAddress}/>
         <Button onClick={submit} variant="outlined" color="primary">Submit</Button>
+        {
+          bookingId !== "" ?
+          <Button onClick={cancel} variant="outlined" color="secondary">
+            Cancel
+          </Button> :
+          null
+        }
       </div>
       <div style={{backgroundColor: "lightcyan", height: "50px"}}>
         {msg}

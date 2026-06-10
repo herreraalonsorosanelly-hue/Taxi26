@@ -21,7 +21,6 @@ function Customer(props) {
     channel.join();
   },[props]);
 
-
   let submit = () => {
     fetch(`http://localhost:4000/api/bookings`, {
       method: 'POST',

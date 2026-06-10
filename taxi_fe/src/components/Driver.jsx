@@ -10,14 +10,27 @@ function Driver(props) {
   let [visible, setVisible] = useState(false);
   useEffect(() => {
     let channel = socket.channel("driver:" + props.username, {token: "123"});
+
     channel.on("booking_request", data => {
       console.log("Received", data);
       setMessage(data.msg);
       setBookingId(data.bookingId);
       setVisible(true);
     });
+
+    channel.on("booking_cancelled", data => {
+      console.log("Cancelled", data);
+      setMessage(data.msg);
+      setBookingId("");
+      setVisible(false);
+    });
+
     channel.join();
-  },[props]);
+
+    return () => {
+      channel.leave();
+    };
+  }, [props.username]);
 
   let reply = (decision) => {
     fetch(`http://localhost:4000/api/bookings/${bookingId}`, {

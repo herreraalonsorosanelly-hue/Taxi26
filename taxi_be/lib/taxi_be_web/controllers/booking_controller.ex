@@ -1,28 +1,41 @@
 defmodule TaxiBeWeb.BookingController do
   use TaxiBeWeb, :controller
-  # alias TaxiBeWeb.TaxiAllocationJob
+
+  alias TaxiBeWeb.TaxiAllocationJob
+
   def create(conn, req) do
-    IO.inspect(req)
-    # booking_id = UUID.uuid1()
-    # TaxiAllocationJob.start_link(
-    #   req |> Map.put("booking_id", booking_id),
-    #   String.to_atom(booking_id)
-    # )
+    booking_id = UUID.uuid1()
+    process_name = String.to_atom(booking_id)
+
+    TaxiAllocationJob.start_link(
+      Map.put(req, "booking_id", booking_id),
+      process_name
+    )
+
     conn
-    |> put_resp_header("Location", "/api/123") # "/api/bookings/" <> booking_id)
+    |> put_resp_header("location", "/api/bookings/" <> booking_id)
     |> put_status(:created)
-    |> json(%{msg: "We are processing your request"})
+    |> json(%{
+      msg: "Estamos buscando un conductor para tu viaje.",
+      booking_id: booking_id
+    })
   end
-  def update(conn, %{"action" => "accept", "username" => username, "id" => _id}) do
-    IO.inspect("'#{username}' is accepting a booking request")
-    json(conn, %{msg: "We will process your acceptance"})
+
+  def update(conn, %{"action" => "accept", "username" => username, "id" => id}) do
+    GenServer.cast(String.to_atom(id), {:process_accept, username})
+
+    json(conn, %{msg: "Aceptación recibida"})
   end
-  def update(conn, %{"action" => "reject", "username" => username, "id" => _id}) do
-    IO.inspect("'#{username}' is rejecting a booking request")
-    json(conn, %{msg: "We will process your rejection"})
+
+  def update(conn, %{"action" => "reject", "username" => username, "id" => id}) do
+    GenServer.cast(String.to_atom(id), {:process_reject, username})
+
+    json(conn, %{msg: "Rechazo recibido"})
   end
-  def update(conn, %{"action" => "cancel", "username" => username, "id" => _id}) do
-    IO.inspect("'#{username}' is cancelling a booking request")
-    json(conn, %{msg: "We will process your cancelation"})
+
+  def update(conn, %{"action" => "cancel", "username" => username, "id" => id}) do
+    GenServer.cast(String.to_atom(id), {:process_cancel, username})
+
+    json(conn, %{msg: "Cancelación recibida"})
   end
 end
